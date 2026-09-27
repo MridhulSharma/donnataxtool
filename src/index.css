@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Level — design tokens. Identity: "civic trust".
+   Three theme states are supported:
+     1. bare :root                        -> light (default)
+     2. prefers-color-scheme: dark        -> dark, unless user forced light
+     3. :root[data-theme="dark"]          -> dark, forced by the toggle
+   ============================================================ */
+
+:root {
+  --paper: #f3f6f4;
+  --surface: #ffffff;
+  --ink: #15211d;
+  --muted: #586a62;
+  --brand: #0d6b57;
+  --brand-soft: #e4efe9;
+  --brand-ink: #0a5544;
+  --lines: #dde5e0;
+
+  --good: #0b6b55;
+  --good-soft: #e6f2ec;
+  --warn: #8a5a00;
+  --warn-soft: #fbf0da;
+  --bad: #9c241f;
+  --bad-soft: #fbe9e7;
+
+  --shadow-1: rgba(21, 33, 29, 0.06);
+  --shadow-2: rgba(21, 33, 29, 0.18);
+  --bar: rgba(255, 255, 255, 0.82);
+  --ring: #0d6b57;
+
+  color-scheme: light;
+}
+
+/* Dark palette, shared by the media query and the manual toggle. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --paper: #0e1512;
+    --surface: #16201c;
+    --ink: #e8efea;
+    --muted: #9db0a7;
+    --brand: #5cc0a4;
+    --brand-soft: #1b2e28;
+    --brand-ink: #a7dccb;
+    --lines: #2a3a34;
+
+    --good: #5cc0a4;
+    --good-soft: #14291f;
+    --warn: #e0ab4a;
+    --warn-soft: #2e2413;
+    --bad: #f08a80;
+    --bad-soft: #35191a;
+
+    --shadow-1: rgba(0, 0, 0, 0.5);
+    --shadow-2: rgba(0, 0, 0, 0.6);
+    --bar: rgba(22, 32, 28, 0.82);
+    --ring: #5cc0a4;
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --paper: #0e1512;
+  --surface: #16201c;
+  --ink: #e8efea;
+  --muted: #9db0a7;
+  --brand: #5cc0a4;
+  --brand-soft: #1b2e28;
+  --brand-ink: #a7dccb;
+  --lines: #2a3a34;
+
+  --good: #5cc0a4;
+  --good-soft: #14291f;
+  --warn: #e0ab4a;
+  --warn-soft: #2e2413;
+  --bad: #f08a80;
+  --bad-soft: #35191a;
+
+  --shadow-1: rgba(0, 0, 0, 0.5);
+  --shadow-2: rgba(0, 0, 0, 0.6);
+  --bar: rgba(22, 32, 28, 0.82);
+  --ring: #5cc0a4;
+
+  color-scheme: dark;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Public Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Figures line up in columns. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+h1, h2, h3 {
+  font-family: 'Fraunces', Georgia, Cambria, 'Times New Roman', serif;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  line-height: 1.18;
+  text-wrap: balance;
+}
+
+/* One visible focus treatment everywhere, keyboard-only. */
+:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Some browsers still paint a default ring on mouse focus; suppress only
+   when :focus-visible is not matched, so keyboard users keep theirs. */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Visually hidden but available to assistive technology. */
+.sr-only-focusable:not(:focus) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

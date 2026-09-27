@@ -1,0 +1,30 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+# Level
+# The 40MB source database is a local input, not a repo artifact. `npm run data`
+# reads it and writes src/data/local.json, which IS committed so a clean clone
+# (and a Vercel/Netlify build) works without the database present.
+02134.db
+*.db
