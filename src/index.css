@@ -31,6 +31,8 @@
   --shadow-2: rgba(21, 33, 29, 0.18);
   --bar: rgba(255, 255, 255, 0.82);
   --ring: #0d6b57;
+  --edge-glow: rgba(13, 107, 87, 0.22);
+  --edge-line: rgba(13, 107, 87, 0.10);
 
   color-scheme: light;
 }
@@ -58,6 +60,8 @@
     --shadow-2: rgba(0, 0, 0, 0.6);
     --bar: rgba(22, 32, 28, 0.82);
     --ring: #5cc0a4;
+    --edge-glow: rgba(92, 192, 164, 0.30);
+    --edge-line: rgba(92, 192, 164, 0.16);
 
     color-scheme: dark;
   }
@@ -84,6 +88,8 @@
   --shadow-2: rgba(0, 0, 0, 0.6);
   --bar: rgba(22, 32, 28, 0.82);
   --ring: #5cc0a4;
+  --edge-glow: rgba(92, 192, 164, 0.30);
+  --edge-line: rgba(92, 192, 164, 0.16);
 
   color-scheme: dark;
 }
@@ -151,4 +157,84 @@ h1, h2, h3 {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border-width: 0;
+}
+
+/* ============================================================
+   Ambient motion. Both effects are purely decorative, neither is
+   announced, and both stop dead when the reader asks for less motion.
+   ============================================================ */
+
+/* A soft brand-coloured glow framing the viewport, breathing slowly. Fixed and
+   non-interactive, and it sits below the sticky top bar (z-40) so it can never
+   cover or block the navigation. */
+.ambient-edge {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 1px var(--edge-line),
+    inset 0 0 90px -30px var(--edge-glow),
+    inset 0 0 240px -130px var(--edge-glow);
+  animation: edge-breathe 9s ease-in-out infinite;
+  will-change: opacity;
+}
+
+@keyframes edge-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Cards drift about 6px, each on its own clock, so the page reads as alive
+   rather than as one slab sliding up and down. */
+.float {
+  animation: float-y 8s ease-in-out infinite;
+  will-change: transform;
+}
+
+.float-1 {
+  animation-duration: 8s;
+  animation-delay: 0s;
+}
+
+.float-2 {
+  animation-duration: 8.6s;
+  animation-delay: -1.7s;
+}
+
+.float-3 {
+  animation-duration: 7.5s;
+  animation-delay: -3.3s;
+}
+
+.float-4 {
+  animation-duration: 9s;
+  animation-delay: -5s;
+}
+
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -6px, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-edge {
+    animation-name: none;
+    opacity: 0.8;
+  }
+
+  .float {
+    animation-name: none;
+    transform: none;
+  }
 }

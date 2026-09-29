@@ -26,7 +26,7 @@ export function Disclaimer() {
         </svg>
         <span>
           <strong className="font-semibold">This is legal information, not legal advice.</strong>{' '}
-          Level helps you understand your assessment and prepare your own application. It does not
+          Donna helps you understand your assessment and prepare your own application. It does not
           represent you, and its estimates do not predict what the assessors will decide. Have a
           navigator, clinic, or attorney review your application before you file — and{' '}
           <strong className="font-semibold">

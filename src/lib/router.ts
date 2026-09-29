@@ -22,8 +22,8 @@ export function useRoute(): Route {
 }
 
 const TITLES: Record<Route, string> = {
-  tool: 'Level — Is your Boston home over-assessed?',
-  about: 'About Level — Why property tax appeals are uneven',
+  tool: 'Massachusetts Property Tax Tool',
+  about: 'About — Massachusetts Property Tax Tool',
 }
 
 /**

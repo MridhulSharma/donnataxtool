@@ -1,3 +1,6 @@
+/** The product name, used wherever it is shown to the reader. */
+export const BRAND_NAME = 'Donna'
+
 /**
  * The mark is a spirit level: a vial with the bubble centred. It reads as
  * "balance" and "check it yourself", which is the whole product.
@@ -10,7 +13,7 @@ export function LevelMark({ className = '' }: { className?: string }) {
       width="28"
       height="28"
       role="img"
-      aria-label="Level"
+      aria-label={BRAND_NAME}
       focusable="false"
     >
       <rect

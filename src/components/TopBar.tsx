@@ -1,4 +1,4 @@
-import { LevelMark } from './Brand'
+import { BRAND_NAME, LevelMark } from './Brand'
 import { ThemeToggle } from './ThemeToggle'
 import type { Route } from '../lib/router'
 
@@ -14,10 +14,12 @@ export function TopBar({ route }: { route: Route }) {
         <a
           href="#tool"
           className="flex items-center gap-2.5 rounded-md text-ink no-underline"
-          aria-label="Level, home"
+          aria-label={`${BRAND_NAME}, home`}
         >
           <LevelMark />
-          <span className="font-display text-[1.35rem] font-semibold tracking-tight">Level</span>
+          <span className="font-display text-[1.35rem] font-semibold tracking-tight">
+            {BRAND_NAME}
+          </span>
         </a>
 
         <nav aria-label="Main" className="ml-auto">

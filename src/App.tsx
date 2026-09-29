@@ -17,6 +17,9 @@ export default function App() {
         Skip to content
       </a>
 
+      {/* Decorative ambient frame. Fixed, non-interactive, below the top bar. */}
+      <div className="ambient-edge" aria-hidden="true" />
+
       <TopBar route={route} />
 
       <main id="main" className="mx-auto max-w-content px-4 pb-20 pt-8 sm:px-6 sm:pt-12">
@@ -26,7 +29,7 @@ export default function App() {
       <footer className="border-t border-lines bg-surface">
         <div className="mx-auto max-w-content px-4 py-8 text-[0.9rem] text-muted sm:px-6">
           <p className="m-0">
-            Level is a free, non-commercial tool for Suffolk County, Massachusetts homeowners. It
+            Donna is a free, non-commercial tool for Suffolk County, Massachusetts homeowners. It
             keeps no account and stores nothing about you.
           </p>
           <p className="m-0 mt-2">
