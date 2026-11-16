@@ -1,5 +1,5 @@
 /**
- * Persistent on every page. The wording is load-bearing: Level provides legal
+ * Persistent on every page. The wording is load-bearing: Donna provides legal
  * information and document preparation, and the tax bill must still be paid.
  */
 export function Disclaimer() {

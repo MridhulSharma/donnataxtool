@@ -2,7 +2,7 @@ import * as Label from '@radix-ui/react-label'
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Console } from '../components/Console'
 import { btnPrimary, btnSecondary, Chip, Note } from '../components/ui'
-import { money, sqft, titleCase, year } from '../lib/format'
+import { fiscalYearLabel, money, sqft, titleCase, year } from '../lib/format'
 import { EXAMPLE_LABEL } from '../lib/local'
 import { appendLiveResults, immediateResults } from '../lib/search'
 import type { Property } from '../lib/types'
@@ -23,6 +23,7 @@ export function FindProperty({ selected, onSelect, isExample, onLoadExample }: P
   const [results, setResults] = useState<Property[]>([])
   const [status, setStatus] = useState('')
   const [searching, setSearching] = useState(false)
+  const [liveError, setLiveError] = useState<string | null>(null)
   const runId = useRef(0)
   const debounce = useRef<number | undefined>(undefined)
 
@@ -33,35 +34,50 @@ export function FindProperty({ selected, onSelect, isExample, onLoadExample }: P
     if (q.length < MIN_QUERY) {
       setResults([])
       setSearching(false)
+      setLiveError(null)
       setStatus(q.length === 0 ? '' : 'Keep typing — enter at least two characters.')
       return
     }
 
-    // Instant matches render first, then the wider search fills in behind them.
-    const fast = immediateResults(q)
-    setResults(fast)
     setSearching(true)
-    setStatus(
-      fast.length > 0
-        ? `${fast.length} ${fast.length === 1 ? 'record' : 'records'} found. Choose your property below:`
-        : 'Searching public records…',
-    )
+    setLiveError(null)
+    setStatus('Searching public records…')
 
-    const outcome = await appendLiveResults(q, fast)
-    if (runId.current !== id) return // a newer query is in flight
+    // Records held in the page match instantly; the citywide search fills in
+    // behind them.
+    const fast = await immediateResults(q)
+    if (runId.current !== id) return
+    if (fast.length > 0) {
+      setResults(fast)
+      setStatus(
+        `${fast.length} ${fast.length === 1 ? 'record' : 'records'} found. Choose your property below:`,
+      )
+    }
 
-    setResults(outcome.results)
-    setSearching(false)
-
-    const n = outcome.results.length
-    if (n === 0) {
-      setStatus('No matching records found. Try just the street name.')
-    } else {
-      setStatus(`${n} ${n === 1 ? 'record' : 'records'} found. Choose your property below:`)
+    try {
+      const outcome = await appendLiveResults(q, fast)
+      if (runId.current !== id) return
+      setResults(outcome.results)
+      setLiveError(outcome.liveError)
+      const n = outcome.results.length
+      setStatus(
+        n === 0
+          ? 'No matching records found. Try just the street name.'
+          : `${n} ${n === 1 ? 'record' : 'records'} found. Choose your property below:`,
+      )
+    } catch {
+      if (runId.current !== id) return
+      setStatus(
+        fast.length > 0
+          ? `${fast.length} ${fast.length === 1 ? 'record' : 'records'} found. Choose your property below:`
+          : 'No matching records found. Try just the street name.',
+      )
+    } finally {
+      if (runId.current === id) setSearching(false)
     }
   }, [])
 
-  // Debounced so we are not firing a network request on every keystroke.
+  // Debounced, so a network request does not fire on every keystroke.
   useEffect(() => {
     window.clearTimeout(debounce.current)
     debounce.current = window.setTimeout(() => void run(query), 250)
@@ -73,7 +89,7 @@ export function FindProperty({ selected, onSelect, isExample, onLoadExample }: P
       n="01"
       id="find"
       title="Find your property"
-      lede="Type your street address as it appears on your tax bill. Searching is anonymous — nothing you type is saved or sent anywhere that identifies you."
+      lede="Type your street address as it appears on your tax bill. Searching is anonymous — nothing you type is saved, and nothing identifies you."
     >
       <form
         role="search"
@@ -114,6 +130,12 @@ export function FindProperty({ selected, onSelect, isExample, onLoadExample }: P
         {searching ? <span className="sr-only"> Still searching.</span> : null}
       </p>
 
+      {liveError ? (
+        <Note tone="warn" title="The citywide search did not answer" className="mt-2">
+          <p className="m-0">{liveError}</p>
+        </Note>
+      ) : null}
+
       {results.length > 0 ? (
         <ul className="m-0 mt-1 flex list-none flex-col gap-2 p-0">
           {results.map((p) => {
@@ -137,7 +159,7 @@ export function FindProperty({ selected, onSelect, isExample, onLoadExample }: P
                     {current ? <Chip tone="brand">Selected</Chip> : null}
                   </span>
                   <span className="tnum text-[0.9rem] text-muted">
-                    Assessed {money(p.tv)}
+                    {fiscalYearLabel(p.fy)} assessed {money(p.tv)}
                     {p.la ? ` · ${sqft(p.la)}` : ''}
                     {p.yr ? ` · built ${year(p.yr)}` : ''}
                   </span>
@@ -152,13 +174,13 @@ export function FindProperty({ selected, onSelect, isExample, onLoadExample }: P
         {isExample ? (
           <Note tone="brand" title={`Example: ${EXAMPLE_LABEL}`}>
             <p className="m-0">
-              This page opened on a real, genuinely over-assessed property so you can see how the
-              estimate works. Search above to check your own home.
+              This page opened on a real property so you can see how the tool works before you
+              search for your own. Everything below is worked out from its public record.
             </p>
           </Note>
         ) : (
           <button type="button" onClick={onLoadExample} className={btnPrimary}>
-            Try a real example: {EXAMPLE_LABEL}
+            Back to the example: {EXAMPLE_LABEL}
           </button>
         )}
       </div>

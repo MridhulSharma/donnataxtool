@@ -1,35 +1,49 @@
 import { useEffect, useState } from 'react'
 
-export type Route = 'tool' | 'about'
+export type Route = 'tool' | 'about' | 'review'
 
-function parse(hash: string): Route {
-  return hash.replace(/^#\/?/, '').toLowerCase() === 'about' ? 'about' : 'tool'
+export interface Location {
+  route: Route
+  /** Anything after the route, used by the reviewer view to carry a case. */
+  payload: string | null
+}
+
+function parse(hash: string): Location {
+  const raw = hash.replace(/^#\/?/, '')
+  const [first, ...rest] = raw.split('/')
+  const name = first.toLowerCase()
+  if (name === 'about') return { route: 'about', payload: null }
+  if (name === 'review') return { route: 'review', payload: rest.join('/') || null }
+  return { route: 'tool', payload: null }
 }
 
 /** Hash routing, so the app deploys as plain static files with no rewrites. */
-export function useRoute(): Route {
-  const [route, setRoute] = useState<Route>(() =>
-    parse(typeof location === 'undefined' ? '' : location.hash),
+export function useLocation(): Location {
+  const [location, setLocation] = useState<Location>(() =>
+    parse(typeof window === 'undefined' ? '' : window.location.hash),
   )
 
   useEffect(() => {
-    const onHash = () => setRoute(parse(location.hash))
+    const onHash = () => setLocation(parse(window.location.hash))
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
-  return route
+  return location
 }
 
 const TITLES: Record<Route, string> = {
   tool: 'Massachusetts Property Tax Tool',
   about: 'About — Massachusetts Property Tax Tool',
+  review: 'Case review — Massachusetts Property Tax Tool',
 }
 
+let firstRenderDone = false
+
 /**
- * On a route change, update the title and move focus to the new main heading.
- * Without this a keyboard or screen-reader user stays parked wherever the old
- * page left them and is never told the page changed.
+ * On a route change, update the title and move focus to the new main
+ * heading. Without this a keyboard or screen-reader user stays parked where
+ * the old page left them and is never told the page changed.
  */
 export function useRouteEffects(route: Route) {
   useEffect(() => {
@@ -50,5 +64,3 @@ export function useRouteEffects(route: Route) {
     window.scrollTo({ top: 0, behavior: 'auto' })
   }, [route])
 }
-
-let firstRenderDone = false

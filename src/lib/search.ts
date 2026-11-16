@@ -1,53 +1,66 @@
-import { searchLocal } from './local'
 import { searchLive } from './live'
+import { searchLocal } from './local'
 import type { Property } from './types'
 
-/** Two addresses are the same listing if the parcel id or the address matches. */
+/** Two records are the same listing when the parcel id or the address matches. */
 function keyOf(p: Property): string {
   return p.pid || p.addr.toLowerCase().replace(/\s+/g, ' ')
 }
 
+const normalizeAddress = (addr: string) =>
+  addr
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
 export interface SearchOutcome {
   results: Property[]
-  /** True when the citywide query came back empty or failed. */
-  liveFailed: boolean
+  /** Set when the citywide query could not be run. */
+  liveError: string | null
+  /** Fiscal year the citywide records came from, when it answered. */
+  liveFiscalYear: number | null
 }
 
-/**
- * Records that match instantly are rendered first; the citywide query then
- * appends whatever it adds. Presented to the user as one set of public records.
- */
-export function immediateResults(query: string, limit = 25): Property[] {
+/** Records held locally match instantly, so they are rendered first. */
+export async function immediateResults(query: string, limit = 25): Promise<Property[]> {
   return searchLocal(query, limit)
 }
 
-/** De-duplicated citywide additions for a query whose fast results are shown. */
+/**
+ * Citywide additions for a query whose fast results are already on screen,
+ * de-duplicated against them.
+ */
 export async function appendLiveResults(
   query: string,
   already: Property[],
-  limit = 25,
+  signal?: AbortSignal,
 ): Promise<SearchOutcome> {
   const seen = new Set(already.map(keyOf))
-  // Match on street text too: the same parcel can carry different ids per source.
-  const seenAddr = new Set(
-    already.map((p) => p.addr.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim()),
-  )
+  // Match on street text too: the same parcel can carry different ids.
+  const seenAddr = new Set(already.map((p) => normalizeAddress(p.addr)))
 
   let live: Property[] = []
+  let liveError: string | null = null
+  let liveFiscalYear: number | null = null
   try {
-    live = await searchLive(query, limit)
-  } catch {
-    live = []
+    const outcome = await searchLive(query, signal)
+    live = outcome.properties
+    liveFiscalYear = outcome.resource.fiscalYear
+  } catch (error) {
+    if (signal?.aborted) throw error
+    const { userMessage } = await import('./errors')
+    liveError = userMessage(error)
   }
 
   const added: Property[] = []
-  for (const p of live) {
-    const norm = p.addr.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim()
-    if (seen.has(keyOf(p)) || seenAddr.has(norm)) continue
-    seen.add(keyOf(p))
-    seenAddr.add(norm)
-    added.push(p)
+  for (const property of live) {
+    const normalized = normalizeAddress(property.addr)
+    if (seen.has(keyOf(property)) || seenAddr.has(normalized)) continue
+    seen.add(keyOf(property))
+    seenAddr.add(normalized)
+    added.push(property)
   }
 
-  return { results: [...already, ...added], liveFailed: live.length === 0 }
+  return { results: [...already, ...added], liveError, liveFiscalYear }
 }

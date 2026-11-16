@@ -2,11 +2,13 @@ import { useCallback, useEffect, useState } from 'react'
 
 export type Theme = 'light' | 'dark' | 'system'
 
-const KEY = 'level.theme'
+const KEY = 'donna.theme'
+/** The key this used to be stored under, read once so a choice is not lost. */
+const LEGACY_KEY = 'level.theme'
 
 function read(): Theme {
   try {
-    const v = localStorage.getItem(KEY)
+    const v = localStorage.getItem(KEY) ?? localStorage.getItem(LEGACY_KEY)
     if (v === 'light' || v === 'dark') return v
   } catch {
     // Private mode or blocked storage: fall back to following the OS.

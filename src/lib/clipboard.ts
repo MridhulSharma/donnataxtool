@@ -1,7 +1,6 @@
 /**
- * Copy to the clipboard with a fallback for browsers and contexts where the
- * async Clipboard API is unavailable or blocked. There is deliberately no file
- * download anywhere in Level.
+ * Copy to the clipboard, with a fallback for browsers and contexts where the
+ * async Clipboard API is unavailable or blocked.
  */
 export async function copyText(text: string): Promise<boolean> {
   try {

@@ -1,59 +1,80 @@
-import rows from '../data/local.json'
-import type { CompactRow, Property } from './types'
+/**
+ * The records held locally: one neighbourhood, in much more depth than the
+ * citywide extract carries. Sales, condition, lot size and parcel locations
+ * all come from here, and they are what make a sales-based valuation possible.
+ */
+import { loadLocal, loadSales, type Vintage } from '../data'
+import type { Property, Sale } from './types'
 
-/** Widen the compact rows into the shared shape, once, on first use. */
-let cache: Property[] | null = null
+export type { Vintage }
 
-export function localRecords(): Property[] {
-  if (cache) return cache
-  cache = (rows as CompactRow[]).map((r) => ({
-    pid: r.p ?? '',
-    addr: r.a,
-    la: r.la,
-    yr: r.yr,
-    lv: r.lv,
-    bv: r.bv,
-    tv: r.tv,
-    gt: r.gt,
-    sp: r.sp,
-    sd: r.sd,
-    ex: r.ex,
-    o: r.o,
-    lu: r.lu,
-    src: 'local' as const,
-  }))
-  return cache
+/** Everything held locally, loaded once. */
+export async function localRecords(): Promise<Property[]> {
+  return (await loadLocal()).records
+}
+
+export async function localVintage(): Promise<Vintage> {
+  return (await loadLocal()).vintage
+}
+
+export async function findLocalByPid(pid: string): Promise<Property | null> {
+  return (await loadLocal()).byPid.get(pid) ?? null
+}
+
+/** True when a ZIP is one this build carries deep records for. */
+export async function isLocalZip(zip: string | null | undefined): Promise<boolean> {
+  if (!zip) return false
+  return (await loadLocal()).vintage.zips.includes(zip)
 }
 
 /**
- * Instant substring match on the address, ranked by where the match falls —
+ * Instant substring match on the address, ranked by where the match falls:
  * a hit at the start of the address beats one in the middle.
  */
-export function searchLocal(query: string, limit = 25): Property[] {
+export async function searchLocal(query: string, limit = 25): Promise<Property[]> {
   const q = query.trim().toLowerCase()
   if (q.length < 2) return []
 
-  const scored: { rec: Property; at: number }[] = []
-  for (const rec of localRecords()) {
-    const at = rec.addr.toLowerCase().indexOf(q)
-    if (at !== -1) scored.push({ rec, at })
+  const { records } = await loadLocal()
+  const scored: { record: Property; at: number }[] = []
+  for (const record of records) {
+    const at = record.addr.toLowerCase().indexOf(q)
+    if (at !== -1) scored.push({ record, at })
   }
 
-  scored.sort((x, y) => x.at - y.at || x.rec.addr.localeCompare(y.rec.addr, 'en', { numeric: true }))
-  return scored.slice(0, limit).map((s) => s.rec)
+  scored.sort(
+    (x, y) =>
+      x.at - y.at || x.record.addr.localeCompare(y.record.addr, 'en', { numeric: true }),
+  )
+  return scored.slice(0, limit).map((s) => s.record)
 }
 
-export function findLocalByPid(pid: string): Property | null {
-  return localRecords().find((r) => r.pid === pid) ?? null
+/** Every recorded transfer of one parcel, newest first. */
+export async function salesFor(pid: string): Promise<Sale[]> {
+  return (await loadSales()).get(pid) ?? []
 }
 
-/** The worked example the page opens on: a real, genuinely over-assessed parcel. */
+/** Every transfer in the local set, by parcel. */
+export async function allSales(): Promise<Map<string, Sale[]>> {
+  return loadSales()
+}
+
+/**
+ * The worked example the page opens on.
+ *
+ * It is a real parcel, chosen because its record shows what the tool is for:
+ * an assessment well above the neighbourhood rate per square foot, a remodel
+ * on file that helps explain the jump, and a nominal transfer in its sale
+ * history that a naive reading would mistake for a market price. The estimate
+ * it produces is whatever the evidence supports, not a guaranteed finding.
+ */
 export const EXAMPLE_PID = '2201050000'
 export const EXAMPLE_LABEL = '3 Westford St, Allston'
 
-export function exampleProperty(): Property | null {
-  const byPid = findLocalByPid(EXAMPLE_PID)
+export async function exampleProperty(): Promise<Property | null> {
+  const byPid = await findLocalByPid(EXAMPLE_PID)
   if (byPid) return byPid
-  // If the dataset is ever re-extracted and the PID moves, match on the address.
-  return localRecords().find((r) => /^3 WESTFORD ST\b/i.test(r.addr)) ?? null
+  // If the dataset is re-extracted and the parcel id moves, match the address.
+  const records = await localRecords()
+  return records.find((r) => /^3 WESTFORD ST\b/i.test(r.addr)) ?? null
 }

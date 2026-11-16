@@ -22,9 +22,13 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-# Level
+# Donna
 # The 40MB source database is a local input, not a repo artifact. `npm run data`
-# reads it and writes src/data/local.json, which IS committed so a clean clone
-# (and a Vercel/Netlify build) works without the database present.
+# reads it and writes the payloads in src/data/, which ARE committed so a clean
+# clone (and a CI build) works without the database present.
 02134.db
 *.db
+
+# The blank State Tax Form 128 is served from public/forms/, which is committed.
+# A working copy at the project root is not needed in the repository.
+/form128.pdf

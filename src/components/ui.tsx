@@ -50,7 +50,7 @@ export function ExternalLink({
 
 /**
  * Copies text and reports the outcome in words, not just a colour change, in a
- * live region so it is announced. There is no file download anywhere in Level.
+ * live region so it is announced, not carried by a colour change alone.
  */
 export function CopyButton({
   text,
@@ -142,5 +142,84 @@ export function Chip({ tone = 'brand', children }: { tone?: Tone; children: Reac
     >
       {children}
     </span>
+  )
+}
+
+/* ------------------------------------------------------------------ *
+ * Confidence
+ * ------------------------------------------------------------------ */
+
+/**
+ * How much weight a figure carries, said in words and shown with a filled
+ * bar. Never colour alone: the level is written out beside it.
+ */
+export function ConfidenceBadge({
+  level,
+  className = '',
+}: {
+  level: 'none' | 'weak' | 'moderate' | 'strong'
+  className?: string
+}) {
+  const filled = { none: 0, weak: 1, moderate: 2, strong: 3 }[level]
+  const label = { none: 'No basis', weak: 'Weak', moderate: 'Moderate', strong: 'Strong' }[level]
+  const tone: Tone = level === 'strong' ? 'good' : level === 'none' ? 'bad' : 'neutral'
+  return (
+    <span
+      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[0.78rem] font-semibold uppercase tracking-[0.06em] ${TONES[tone]} ${className}`}
+    >
+      <span aria-hidden="true" className="inline-flex gap-[3px]">
+        {[0, 1, 2].map((i) => (
+          <span
+            key={i}
+            className={`block h-[9px] w-[4px] rounded-[1px] ${
+              i < filled ? 'bg-brand' : 'bg-[var(--lines)]'
+            }`}
+          />
+        ))}
+      </span>
+      {label} evidence
+    </span>
+  )
+}
+
+/** A labelled band showing where a value sits against a range. */
+export function RangeBar({
+  low,
+  high,
+  marker,
+  markerLabel,
+  rangeLabel,
+}: {
+  low: number
+  high: number
+  marker: number
+  markerLabel: string
+  rangeLabel: string
+}) {
+  // Pad the drawn scale so the range never fills the whole bar and the
+  // marker is visible even when it sits outside.
+  const span = Math.max(high - low, 1)
+  const min = Math.min(low - span * 0.6, marker - span * 0.25)
+  const max = Math.max(high + span * 0.6, marker + span * 0.25)
+  const at = (value: number) => ((value - min) / (max - min)) * 100
+
+  return (
+    <div className="mt-4">
+      <div className="relative h-9">
+        <div className="absolute inset-x-0 top-[14px] h-[6px] rounded-full bg-[var(--lines)]" />
+        <div
+          className="absolute top-[14px] h-[6px] rounded-full bg-brand"
+          style={{ left: `${at(low)}%`, width: `${at(high) - at(low)}%` }}
+        />
+        <div
+          className="absolute top-[4px] h-[26px] w-[3px] rounded-full bg-[var(--ink)]"
+          style={{ left: `${at(marker)}%` }}
+        />
+      </div>
+      <p className="m-0 flex flex-wrap justify-between gap-x-4 text-[0.85rem] text-muted">
+        <span>{rangeLabel}</span>
+        <span className="font-semibold text-ink">{markerLabel}</span>
+      </p>
+    </div>
   )
 }

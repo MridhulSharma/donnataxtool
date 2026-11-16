@@ -1,0 +1,73 @@
+# Watches the city's published assessment data for a new fiscal year or a
+# renamed column, either of which makes the app wrong without making it fail.
+#
+# It runs weekly from October, so a new fiscal year is noticed well before
+# the February filing deadline, and opens an issue when something needs a
+# person. Run it by hand from the Actions tab at any time.
+name: Check the city's data
+
+on:
+  schedule:
+    # Mondays at 13:10 UTC.
+    - cron: '10 13 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: check
+        run: node scripts/check-source.mjs 2>&1 | tee check.log
+        continue-on-error: true
+      - if: steps.check.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs')
+            const log = fs.readFileSync('check.log', 'utf8')
+            const title = 'City assessment data needs attention'
+            const { data: open } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'data',
+            })
+            const body = [
+              'The weekly check against Analyze Boston reported a problem.',
+              '',
+              '```',
+              log.trim(),
+              '```',
+              '',
+              'If a new fiscal year has been published, rebuild the extract with',
+              '`npm run data` against the new database and commit the payloads in',
+              '`src/data/`. If a column has been renamed, add the new spelling to',
+              '`ALIASES` in `src/lib/live.ts`.',
+            ].join('\n')
+            const existing = open.find((issue) => issue.title === title)
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body,
+              })
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                labels: ['data'],
+                body,
+              })
+            }
+      - if: steps.check.outcome == 'failure'
+        run: exit 1

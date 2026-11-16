@@ -5,7 +5,7 @@ export const BRAND_NAME = 'Donna'
  * The mark is a spirit level: a vial with the bubble centred. It reads as
  * "balance" and "check it yourself", which is the whole product.
  */
-export function LevelMark({ className = '' }: { className?: string }) {
+export function BrandMark({ className = '' }: { className?: string }) {
   return (
     <svg
       className={className}

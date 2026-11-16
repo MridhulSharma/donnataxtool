@@ -1,10 +1,11 @@
 import { TopBar } from './components/TopBar'
-import { useRoute, useRouteEffects } from './lib/router'
+import { useLocation, useRouteEffects } from './lib/router'
 import { AboutPage } from './pages/AboutPage'
+import { ReviewPage } from './pages/ReviewPage'
 import { ToolPage } from './pages/ToolPage'
 
 export default function App() {
-  const route = useRoute()
+  const { route, payload } = useLocation()
   useRouteEffects(route)
 
   return (
@@ -23,7 +24,13 @@ export default function App() {
       <TopBar route={route} />
 
       <main id="main" className="mx-auto max-w-content px-4 pb-20 pt-8 sm:px-6 sm:pt-12">
-        {route === 'about' ? <AboutPage /> : <ToolPage />}
+        {route === 'about' ? (
+          <AboutPage />
+        ) : route === 'review' ? (
+          <ReviewPage payload={payload} />
+        ) : (
+          <ToolPage />
+        )}
       </main>
 
       <footer className="border-t border-lines bg-surface">

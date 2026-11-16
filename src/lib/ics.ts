@@ -1,15 +1,18 @@
 /**
  * A minimal RFC 5545 calendar file, built in the browser.
  *
- * The filing deadline is the one fact in this whole tool that cannot be
- * recovered if it is missed, so it is worth putting into the calendar the
- * homeowner actually looks at. All-day events, so the entry never drifts across
- * a time zone and lands on January 31.
+ * The dates in an abatement cannot be recovered once missed, so they are
+ * worth putting into the calendar the homeowner actually looks at. All-day
+ * events, so an entry never drifts across a time zone and lands on the wrong
+ * day.
  */
+import type { CalendarDay } from './deadline'
+import { addDays } from './deadline'
+
 const pad = (n: number) => String(n).padStart(2, '0')
 
-/** YYYYMMDD, in local terms, for an all-day DATE value. */
-const icsDate = (d: Date) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`
+/** YYYYMMDD, for an all-day DATE value. */
+const icsDate = (d: CalendarDay) => `${d.year}${pad(d.month)}${pad(d.day)}`
 
 /** DTSTAMP is a UTC timestamp. */
 const icsStamp = (d: Date) => `${d.toISOString().replace(/[-:]/g, '').slice(0, 15)}Z`
@@ -23,7 +26,7 @@ function icsText(s: string): string {
     .replace(/\r?\n/g, '\\n')
 }
 
-/** Content lines are folded at 75 octets with a leading space on the rest. */
+/** Content lines are folded at 75 octets, with a leading space on the rest. */
 function fold(line: string): string[] {
   if (line.length <= 74) return [line]
   const out = [line.slice(0, 74)]
@@ -37,8 +40,7 @@ function fold(line: string): string[] {
 }
 
 export interface IcsEvent {
-  /** The all-day date the entry sits on. */
-  date: Date
+  date: CalendarDay
   title: string
   description: string
   /** Days before the date to fire a reminder. Omit for none. */
@@ -54,24 +56,24 @@ export function buildIcs(events: IcsEvent[], now: Date = new Date()): string {
     'METHOD:PUBLISH',
   ]
 
-  events.forEach((ev, i) => {
-    const end = new Date(ev.date.getFullYear(), ev.date.getMonth(), ev.date.getDate() + 1)
+  events.forEach((event, i) => {
+    const end = addDays(event.date, 1)
     lines.push(
       'BEGIN:VEVENT',
-      `UID:${icsDate(ev.date)}-${i}-donna-abatement`,
+      `UID:${icsDate(event.date)}-${i}-donna-abatement`,
       `DTSTAMP:${icsStamp(now)}`,
-      `DTSTART;VALUE=DATE:${icsDate(ev.date)}`,
+      `DTSTART;VALUE=DATE:${icsDate(event.date)}`,
       `DTEND;VALUE=DATE:${icsDate(end)}`,
-      `SUMMARY:${icsText(ev.title)}`,
-      `DESCRIPTION:${icsText(ev.description)}`,
+      `SUMMARY:${icsText(event.title)}`,
+      `DESCRIPTION:${icsText(event.description)}`,
       'TRANSP:TRANSPARENT',
     )
-    if (ev.remindDaysBefore) {
+    if (event.remindDaysBefore) {
       lines.push(
         'BEGIN:VALARM',
         'ACTION:DISPLAY',
-        `TRIGGER:-P${ev.remindDaysBefore}D`,
-        `DESCRIPTION:${icsText(ev.title)}`,
+        `TRIGGER:-P${event.remindDaysBefore}D`,
+        `DESCRIPTION:${icsText(event.title)}`,
         'END:VALARM',
       )
     }
@@ -80,15 +82,12 @@ export function buildIcs(events: IcsEvent[], now: Date = new Date()): string {
 
   lines.push('END:VCALENDAR')
   // CRLF throughout, with a trailing break, as the spec requires.
-  return lines.flatMap(fold).join('\r\n') + '\r\n'
+  return `${lines.flatMap(fold).join('\r\n')}\r\n`
 }
 
-/**
- * Hand the file to the browser. Nothing is uploaded: the calendar is assembled
- * from what is already on screen and saved straight to the user's own disk.
- */
-export function downloadIcs(filename: string, ics: string): void {
-  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' })
+/** Hand a file to the browser. Nothing is uploaded. */
+export function downloadFile(filename: string, data: BlobPart, mime: string): void {
+  const blob = new Blob([data], { type: mime })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -100,3 +99,6 @@ export function downloadIcs(filename: string, ics: string): void {
   // Give the download a tick to start before the blob is revoked.
   window.setTimeout(() => URL.revokeObjectURL(url), 2000)
 }
+
+export const downloadIcs = (filename: string, ics: string): void =>
+  downloadFile(filename, ics, 'text/calendar;charset=utf-8')
